@@ -33,6 +33,10 @@ function FitBounds({ latLngs }) {
   const map = useMap()
   useEffect(() => {
     if (!latLngs || latLngs.length < 2) return
+    // The map mounts after the loading skeleton vanishes; invalidateSize()
+    // re-measures the container so Leaflet picks the right zoom level for
+    // tile loading instead of guessing from a stale (or zero) size.
+    map.invalidateSize()
     try {
       map.fitBounds(L.latLngBounds(latLngs), { padding: [30, 30] })
     } catch {

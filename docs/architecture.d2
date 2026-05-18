@@ -1,0 +1,130 @@
+# Spotter Trip Planner — system architecture
+# Render: d2 docs/architecture.d2 docs/architecture.svg
+# Live editor: https://play.d2lang.com/
+
+vars: {
+  d2-config: {
+    layout-engine: elk
+    theme-id: 0
+  }
+}
+
+direction: down
+
+# ─────────────────────────── Client tier ──────────────────────────
+
+browser: "Browser" {
+  shape: rectangle
+  style: {
+    fill: "#FDFAEE"
+    stroke: "#C40927"
+    stroke-width: 2
+    font-size: 16
+  }
+  tooltip: "React 19 + Vite 8 + MUI 9, localhost:5173"
+
+  form: "TripForm\n4 inputs + autocomplete" {
+    style.fill: "#FFFFFF"
+  }
+  summary: "TripSummary\nlegality verdict + stats" {
+    style.fill: "#FFFFFF"
+  }
+  map: "TripMap\nLeaflet + ORS polyline" {
+    style.fill: "#FFFFFF"
+  }
+  logs: "LogSheets\n24-hr SVG grid per day" {
+    style.fill: "#FFFFFF"
+  }
+
+  form -> summary: "trip state"
+  summary -> map
+  map -> logs
+}
+
+# ─────────────────────────── Backend tier ──────────────────────────
+
+backend: "Django + DRF\n:8000" {
+  shape: rectangle
+  style: {
+    fill: "#F1F4DD"
+    stroke: "#3A5A1F"
+    stroke-width: 2
+    font-size: 16
+  }
+
+  viewset: "TripViewSet\nPOST /api/trips/\nGET /api/trips/<id>/" {
+    style.fill: "#FFFFFF"
+  }
+
+  geocode: "geocode_autocomplete\nGET /api/geocode/\n(10-min LocMem cache)" {
+    style.fill: "#FFFFFF"
+  }
+
+  builder: "trip_builder\norchestrator" {
+    style.fill: "#FFFFFF"
+  }
+
+  scheduler: "hos_scheduler\ngreedy event loop\n4 simultaneous clocks" {
+    style.fill: "#FFFFFF"
+    style.stroke: "#C40927"
+  }
+
+  ors_client: "ors_client\ngeocode + route_hgv" {
+    style.fill: "#FFFFFF"
+  }
+
+  models: "models\nTrip · Stop · LogDay · LogEntry" {
+    style.fill: "#FFFFFF"
+  }
+
+  viewset -> builder: "validated form"
+  builder -> ors_client: "geocode current/pickup/dropoff"
+  builder -> ors_client: "route_hgv leg A + leg B"
+  builder -> scheduler: "miles + drive-hrs + cycle"
+  scheduler -> builder: "events + is_legal"
+  builder -> models: "atomic write"
+  geocode -> ors_client: "autocomplete"
+}
+
+# ──────────────────────────── Data tier ────────────────────────────
+
+db: "SQLite\ndb.sqlite3" {
+  shape: cylinder
+  style: {
+    fill: "#E8E4D5"
+    stroke: "#3A5A1F"
+    font-size: 14
+  }
+}
+
+# ─────────────────────────── External tier ─────────────────────────
+
+ors: "OpenRouteService\n/geocode/search\n/geocode/autocomplete\n/v2/directions/driving-hgv" {
+  shape: cloud
+  style: {
+    fill: "#FFE9DD"
+    stroke: "#C40927"
+    font-size: 14
+  }
+  tooltip: "Free tier · 2000 req/day · truck-aware routing"
+}
+
+# ─────────────────────────── Cross-tier edges ──────────────────────
+
+browser.form -> backend.viewset: "POST /api/trips/" {
+  style.stroke: "#C40927"
+  style.stroke-width: 2
+}
+
+browser.form -> backend.geocode: "GET /api/geocode/?text=…" {
+  style.stroke-dash: 3
+}
+
+backend.models -> db: "writes" {
+  style.stroke: "#3A5A1F"
+}
+
+backend.ors_client -> ors: "https://api.openrouteservice.org" {
+  style.stroke: "#C40927"
+  style.stroke-width: 2
+}
