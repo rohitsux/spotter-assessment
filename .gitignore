@@ -1,0 +1,56 @@
+# Secrets — NEVER commit
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+
+# Python / Django
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+*.egg-info/
+.eggs/
+db.sqlite3
+db.sqlite3-journal
+media/
+staticfiles/
+.venv/
+venv/
+env/
+
+# Node / React / Vite
+node_modules/
+dist/
+build/
+.vite/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# IDE / OS
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+*.swp
+*.swo
+
+# Test / coverage
+.pytest_cache/
+.coverage
+htmlcov/
+.tox/
+coverage.xml
+
+# Local planning docs (these live at spotter-assessment/, not in app/, but belt-and-suspenders)
+CONTEXT.md
+DECISIONS.md
+LOOM-SCRIPT.md
+BUILD-BRIEF.md
+PHASE-4-PLAN.md
+MOCKUP.html
+spotter-context.html
