@@ -64,6 +64,8 @@ html, body { background: var(--bg); color: var(--ink); font-family: 'Karla', sys
   transition: background .15s;
 }
 .btn-primary:hover { background: var(--vermillion); }
+.btn-primary:disabled { opacity: 0.6; cursor: wait; }
+.btn-primary:disabled:hover { background: var(--ink); }
 
 .pill {
   display: inline-flex; align-items: center; gap: 8px;
