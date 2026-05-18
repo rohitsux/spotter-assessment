@@ -123,6 +123,30 @@ html, body { background: var(--bg); color: var(--ink); font-family: 'Karla', sys
   100% { background-position:  200% 0; }
 }
 
+/* Leaflet marker wrapper — strip the default white box/border the library
+ * injects when className is set on divIcon. Our .map-icon-badge already
+ * supplies the visual ring. */
+.leaflet-marker-clean {
+  background: transparent !important;
+  border: 0 !important;
+  box-shadow: none !important;
+}
+
+/* Apply Newsreader serif inside Leaflet popups to match editorial tone. */
+.leaflet-popup-content {
+  font-family: 'Newsreader', Georgia, serif;
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--ink);
+  margin: 10px 14px;
+}
+.leaflet-popup-content-wrapper {
+  border-radius: 2px;
+  border: 1px solid var(--line);
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.06);
+}
+.leaflet-popup-tip-container { opacity: 0.6; }
+
 .pill {
   display: inline-flex; align-items: center; gap: 8px;
   padding: 5px 0; font-size: 12px; font-weight: 500;
