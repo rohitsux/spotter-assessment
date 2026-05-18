@@ -65,18 +65,15 @@ MIDDLEWARE = [
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
 ]
 
-# CORS: dev allows the Vite proxy origins; prod adds the deployed frontend
-# URL via env var (set after the Vercel deploy lands).
+# CORS: dev allows the Vite proxy origins. Prod allows ONLY the explicit
+# FRONTEND_ORIGIN env var — no wildcard *.vercel.app pattern, so other
+# Vercel projects (or a fork's preview deploy) can't talk to this backend.
 CORS_ALLOWED_ORIGINS = [
     "http://localhost:5173",
     "http://127.0.0.1:5173",
 ]
 if os.getenv("FRONTEND_ORIGIN"):
     CORS_ALLOWED_ORIGINS.append(os.environ["FRONTEND_ORIGIN"])
-# Also allow any vercel.app preview URL (read-only API; no cookies involved).
-CORS_ALLOWED_ORIGIN_REGEXES = [
-    r"^https://.*\.vercel\.app$",
-]
 
 ROOT_URLCONF = "spotter_api.urls"
 
@@ -127,12 +124,11 @@ STORAGES = {
 }
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
-# CSRF: Railway and Vercel both serve over HTTPS. The DRF endpoints we expose
-# don't use CSRF tokens (they're stateless JSON), but Django's admin still
-# does — so trust both deploy targets.
+# CSRF: Railway serves the Django admin over HTTPS. The DRF endpoints we
+# expose don't use CSRF tokens (stateless JSON). Trust only the Railway
+# domain pattern + the explicit frontend origin — no Vercel wildcard.
 CSRF_TRUSTED_ORIGINS = [
     "https://*.up.railway.app",
-    "https://*.vercel.app",
 ]
 if os.getenv("FRONTEND_ORIGIN"):
     CSRF_TRUSTED_ORIGINS.append(os.environ["FRONTEND_ORIGIN"])
