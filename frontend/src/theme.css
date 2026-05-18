@@ -103,6 +103,26 @@ html, body { background: var(--bg); color: var(--ink); font-family: 'Karla', sys
   color: var(--vermillion);
 }
 
+/* Skeleton shimmer for loading states. Editorial: warm paper background
+ * with a vermillion-soft sweep, slow + understated (no aggressive blue
+ * pulses). Sits on the page like a placeholder typesetting block. */
+.shimmer-bar {
+  display: inline-block;
+  border-radius: 2px;
+  background: linear-gradient(
+    90deg,
+    var(--line-2) 0%,
+    var(--vermillion-soft) 50%,
+    var(--line-2) 100%
+  );
+  background-size: 200% 100%;
+  animation: shimmer 1.6s ease-in-out infinite;
+}
+@keyframes shimmer {
+  0%   { background-position: -100% 0; }
+  100% { background-position:  200% 0; }
+}
+
 .pill {
   display: inline-flex; align-items: center; gap: 8px;
   padding: 5px 0; font-size: 12px; font-weight: 500;

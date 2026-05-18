@@ -13,7 +13,7 @@ import AutocompleteInput from './AutocompleteInput.jsx'
  * banner. 400s surface per-field. Network errors get a "is the backend running"
  * banner.
  */
-export default function TripForm({ onTrip }) {
+export default function TripForm({ onTrip, onLoadingChange }) {
   const [cur,  setCur]  = useState('Dallas, TX')
   const [pu,   setPu]   = useState('Houston, TX')
   const [drop, setDrop] = useState('Chicago, IL')
@@ -26,6 +26,7 @@ export default function TripForm({ onTrip }) {
   async function handleSubmit(e) {
     e.preventDefault()
     setLoading(true)
+    onLoadingChange?.(true)
     setTopError(null)
     setFieldErrors({})
 
@@ -58,6 +59,7 @@ export default function TripForm({ onTrip }) {
       }
     } finally {
       setLoading(false)
+      onLoadingChange?.(false)
     }
   }
 
