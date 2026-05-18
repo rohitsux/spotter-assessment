@@ -8,26 +8,29 @@ The user is the **dispatcher**, not the driver. The hard problem isn't React or 
 
 ## Live demo
 
-> **Live URL:** _to be added once Vercel + Railway are wired up_
+> **Live app:** https://spotter-assessment-five.vercel.app
+>
+> **API:** https://spotter-assessment-production.up.railway.app
 >
 > **Repo:** https://github.com/rohitsux/spotter-assessment
 
-The Houston → Chicago example used throughout the docs is one click away when you open the app: form is pre-filled with `Dallas, TX / Houston, TX / Chicago, IL / 20.0`. Submit it and you should see a 3-day legal plan ending with ~50 hours of the 70-hour cycle used.
+
+The Dallas → Houston → Chicago example is one click away when you open the app: form is pre-filled with `Dallas, TX / Houston, TX / Chicago, IL / 20.0`. Submit it and you should see a 3-day legal plan covering 1,324 miles with the 236-mile Dallas-to-Houston deadhead leg accounted for, ending at 51.9 of the 70-hour cycle used.
 
 ---
 
 ## The four Hours-of-Service clocks
 
-All four FMCSA §395.3 clocks run simultaneously on every driver. The scheduler in this app enforces all four with explicit citations:
+Every property-carrying truck driver in the US runs four federal time limits simultaneously. The scheduler enforces all four and cites each one back to the regulation, so a reviewer can verify the math against the actual law.
 
-| Clock | Limit | Reset | CFR cite |
+| Clock | What it means | Resets when | Regulation |
 |---|---|---|---|
-| Driving window | 14 consecutive hrs | 10 hrs off-duty | §395.3(a)(2) |
-| Driving limit | 11 driving hrs / window | 10 hrs off-duty | §395.3(a)(3) |
-| 30-min break trigger | After 8 cumulative driving hrs | 30 min off-duty | §395.3(a)(3)(ii) |
-| 70-hour cycle | 70 on-duty hrs / rolling 8 days | _34-hr restart — out of scope_ | §395.3(b)(2) |
+| **Driving window** | Once the driver clocks in, all driving must finish inside 14 wall-clock hours | After 10 hours off-duty | [49 CFR §395.3(a)(2)](https://www.ecfr.gov/current/title-49/section-395.3#p-395.3(a)(2)) |
+| **Driving limit** | Inside that 14-hour window, max 11 hours of actual driving | After 10 hours off-duty | [49 CFR §395.3(a)(3)](https://www.ecfr.gov/current/title-49/section-395.3#p-395.3(a)(3)) |
+| **30-minute break** | After 8 cumulative hours of driving, take a 30-minute non-driving break | A 30-minute pause | [49 CFR §395.3(a)(3)(ii)](https://www.ecfr.gov/current/title-49/section-395.3#p-395.3(a)(3)(ii)) |
+| **70-hour cycle** | Rolling 8-day total of on-duty hours can't exceed 70 | _34-hour restart — out of scope, see Scope cuts_ | [49 CFR §395.3(b)(2)](https://www.ecfr.gov/current/title-49/section-395.3#p-395.3(b)(2)) |
 
-Every constant in `backend/trips/hos_constants.py` is named and cited. A reviewer can verify each line of the scheduler directly against the regulations.
+Every constant in [`backend/trips/hos_constants.py`](backend/trips/hos_constants.py) is named with the same regulation reference inline, so the scheduler reads top-to-bottom like a checklist against FMCSA Part 395.
 
 ---
 
