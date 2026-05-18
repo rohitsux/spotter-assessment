@@ -1,0 +1,212 @@
+/*
+ * Editorial design tokens + utility classes, ported verbatim from MOCKUP.html
+ * (the locked v5 spec). All colors are OKLCH so they hold across light/dark
+ * UIs without saturation drift. Typography is Newsreader serif + Karla sans
+ * + JetBrains Mono for numbers and labels.
+ *
+ * Tailwind CDN handles utility classes (flex, gap, etc.). This file owns:
+ *   - CSS custom properties (--bg, --ink, --vermillion, ...)
+ *   - editorial component classes (.card, .input, .pill, .small-caps, ...)
+ *   - the form field-row grid that needs a media query
+ *   - the 24-hr log-sheet grid base styles
+ *
+ * Dropped from the MOCKUP source on purpose:
+ *   - .map-truck / @keyframes truck-walk: the v5 decorative truck overlay was
+ *     hand-calibrated to the Houston-Chicago route in the static mockup;
+ *     replaced in Phase 4.5 by Leaflet's polyline + markers, which carry the
+ *     visualization regardless of route.
+ */
+
+:root {
+  --bg: oklch(96% 0.012 75);
+  --bg-2: oklch(98% 0.008 75);
+  --surface: oklch(99% 0.005 75);
+  --ink: oklch(20% 0.02 250);
+  --ink-2: oklch(40% 0.02 250);
+  --ink-3: oklch(60% 0.015 250);
+  --line: oklch(82% 0.015 75);
+  --line-2: oklch(90% 0.012 75);
+  --navy: oklch(28% 0.06 250);
+  --vermillion: oklch(55% 0.20 30);
+  --vermillion-soft: oklch(96% 0.04 30);
+  --olive: oklch(50% 0.09 130);
+  --olive-soft: oklch(95% 0.03 130);
+}
+
+html, body { background: var(--bg); color: var(--ink); font-family: 'Karla', system-ui, sans-serif; }
+.font-mono { font-family: 'JetBrains Mono', ui-monospace, monospace; }
+.font-serif { font-family: 'Newsreader', Georgia, serif; }
+
+.card {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 2px;
+}
+
+.input {
+  background: transparent; border: 0; border-bottom: 1px solid var(--ink-2); border-radius: 0;
+  padding: 6px 0 8px 0; font-size: 17px; color: var(--ink); width: 100%;
+  font-family: 'Newsreader', Georgia, serif;
+  transition: border-color .15s;
+}
+.input:focus { outline: none; border-bottom-color: var(--vermillion); border-bottom-width: 2px; padding-bottom: 7px; }
+
+.label {
+  font-family: 'Karla', sans-serif;
+  font-size: 10px; font-weight: 600; color: var(--ink-3);
+  letter-spacing: .18em; text-transform: uppercase;
+}
+
+.btn-primary {
+  background: var(--ink); color: var(--bg-2); border-radius: 1px;
+  padding: 14px 32px; font-family: 'Karla', sans-serif;
+  font-size: 12px; font-weight: 600; letter-spacing: .22em; text-transform: uppercase;
+  transition: background .15s;
+}
+.btn-primary:hover { background: var(--vermillion); }
+
+.pill {
+  display: inline-flex; align-items: center; gap: 8px;
+  padding: 5px 0; font-size: 12px; font-weight: 500;
+  font-family: 'Karla', sans-serif; letter-spacing: .14em; text-transform: uppercase;
+}
+.pill-ok { color: var(--olive); }
+.pill-ok::before { content: ""; width: 8px; height: 8px; border-radius: 999px; background: var(--olive); display: inline-block; }
+.pill-bad { color: var(--vermillion); }
+.pill-bad::before { content: ""; width: 8px; height: 8px; border-radius: 999px; background: var(--vermillion); display: inline-block; }
+
+.stop-dot { width: 10px; height: 10px; border-radius: 999px; }
+.stop-diamond { width: 10px; height: 10px; transform: rotate(45deg); }
+.stop-square { width: 10px; height: 10px; border-radius: 1px; }
+
+.grid-svg { display: block; }
+.h-rule { border-top: 1px solid var(--line-2); }
+
+details > summary { list-style: none; cursor: pointer; }
+details > summary::-webkit-details-marker { display: none; }
+.chev { transition: transform .2s; color: var(--ink-3); }
+details[open] .chev { transform: rotate(180deg); }
+
+.field-row {
+  display: grid;
+  grid-template-columns: 220px 1fr;
+  align-items: end;
+  gap: 24px;
+  padding: 18px 0;
+  border-bottom: 1px solid var(--line-2);
+}
+.field-row:last-child { border-bottom: 0; }
+@media (max-width: 720px) {
+  .field-row { grid-template-columns: 1fr; gap: 6px; padding: 14px 0; }
+}
+
+.map-bg {
+  background-color: oklch(94% 0.018 75);
+  background-image:
+    repeating-linear-gradient(45deg, oklch(85% 0.02 75) 0 1px, transparent 1px 14px),
+    repeating-linear-gradient(-45deg, oklch(85% 0.02 75) 0 1px, transparent 1px 14px);
+}
+
+.route-poly {
+  stroke: var(--vermillion);
+  stroke-width: 3;
+  fill: none;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+.map-marker-label { font-family: 'JetBrains Mono', monospace; font-size: 10px; fill: var(--ink); }
+
+.editorial-title {
+  font-family: 'Newsreader', serif;
+  font-weight: 400;
+  letter-spacing: -0.01em;
+}
+
+.num-display {
+  font-family: 'Newsreader', serif;
+  font-variant-numeric: tabular-nums oldstyle-nums;
+  font-weight: 500;
+  color: var(--ink);
+}
+
+.small-caps {
+  font-family: 'Karla', sans-serif;
+  font-size: 11px; font-weight: 600;
+  letter-spacing: .18em; text-transform: uppercase;
+  color: var(--ink-3);
+}
+
+.rule-thick { border-top: 2px solid var(--ink); }
+
+.drop-cap::first-letter {
+  font-family: 'Newsreader', serif;
+  font-size: 2em;
+  font-weight: 600;
+  float: left;
+  line-height: 0.85;
+  padding: 4px 8px 0 0;
+  color: var(--vermillion);
+}
+
+/* v5: map icon badges (used in stop list and inline).
+ * The colored marker SVGs (gas-pump, coffee, etc.) have built-in whitespace
+ * around their paths, so we render the inner img at ~60% of the badge size
+ * with object-contain to keep it visually centered regardless of intrinsic
+ * viewBox padding. */
+.map-icon-badge {
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 40px; height: 40px; border-radius: 999px;
+  background: #fff; border: 1.5px solid var(--ring, var(--ink-3));
+  flex-shrink: 0;
+}
+.map-icon-badge svg,
+.map-icon-badge img {
+  display: block;
+  width: 75%; height: 75%;
+  object-fit: contain;
+}
+/* The snooze (zzz) and gas-pump SVGs have less internal whitespace than
+ * coffee/van, so they look oversized at the shared 75%. Shrink just those. */
+.map-icon-badge img[src$="snooze-zzz-icon.svg"],
+.map-icon-badge img[src$="gas-pump-icon.svg"] {
+  width: 55%; height: 55%;
+}
+
+/* Mascot in the form card upper-right (idle pose). Hidden below md
+ * per resolved-question 7 — the trip-status mascot swap stays in the
+ * summary card on mobile.
+ *
+ * All three mascot SVGs share viewBox "0 0 364.544 403.456" with the
+ * figure bottom-centered, so a single width is enough; no CSS object-fit
+ * compensation needed. */
+.mascot-float {
+  position: absolute;
+  top: -18px; right: -8px;
+  width: 96px; height: auto;
+  transform: rotate(8deg);
+  pointer-events: none;
+  filter: drop-shadow(0 6px 12px rgba(0,0,0,0.08));
+}
+.mascot-float img { width: 100%; height: auto; display: block; }
+@media (max-width: 720px) {
+  .mascot-float { display: none; }
+}
+
+.form-section-anchor { position: relative; }
+
+/* Mascot in the verdict (summary) card. Swaps src between mascot-legal.svg
+ * and mascot-not-legal.svg in Phase 4.4. Mascots share a viewBox (see
+ * .mascot-float comment) so swap is footprint-identical. */
+.verdict-mascot {
+  position: absolute;
+  top: -22px; right: -6px;
+  width: 110px; height: auto;
+  transform: rotate(-6deg);
+  pointer-events: none;
+  filter: drop-shadow(0 6px 12px rgba(0,0,0,0.08));
+  z-index: 2;
+}
+.verdict-mascot img { width: 100%; height: auto; display: block; }
+@media (max-width: 720px) {
+  .verdict-mascot { width: 84px; right: 6px; top: -14px; }
+}
