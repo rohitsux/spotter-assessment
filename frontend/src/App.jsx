@@ -5,6 +5,7 @@ import TripSummary from './components/TripSummary.jsx'
 import TripSummarySkeleton from './components/TripSummarySkeleton.jsx'
 import TripMap from './components/TripMap.jsx'
 import TripMapSkeleton from './components/TripMapSkeleton.jsx'
+import LogSheets from './components/LogSheets.jsx'
 
 /**
  * Editorial layout per MOCKUP.html (locked v5 spec):
@@ -31,6 +32,7 @@ export default function App() {
           <>
             <TripSummary trip={trip} />
             <TripMap trip={trip} />
+            <LogSheets trip={trip} />
           </>
         )}
       </main>
