@@ -46,15 +46,3 @@ htmlcov/
 .tox/
 coverage.xml
 
-# Local planning docs (these live at spotter-assessment/, not in app/, but belt-and-suspenders)
-CONTEXT.md
-DECISIONS.md
-LOOM-SCRIPT.md
-BUILD-BRIEF.md
-PHASE-4-PLAN.md
-CLAUDE-CODE-KICKOFF.md
-MOCKUP.html
-MOCKUP-not-legal.html
-spotter-context.html
-mascot-viewer.html
-mascot-source.svg
