@@ -12,7 +12,7 @@ export default function TripSummary({ trip }) {
   const mascotSrc    = trip.is_legal ? '/mascots/mascot-legal.svg' : '/mascots/mascot-not-legal.svg';
 
   return (
-    <section className="card p-7 relative">
+    <section className="card p-5 md:p-7 relative">
       {/* Decorative mascot — purely visual, verdict text conveys legality */}
       <div className="verdict-mascot">
         <img src={mascotSrc} alt="" aria-hidden="true" />
@@ -46,23 +46,23 @@ export default function TripSummary({ trip }) {
             </div>
           )}
 
-          {/* Stat grid */}
-          <div className="grid grid-cols-4 gap-6 mt-4">
+          {/* Stat grid — 2x2 on mobile, 4-col from md (768px) up */}
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-6 mt-4">
             <div>
               <div className="label">Distance</div>
-              <div className="num-display text-[40px] leading-none mt-2">
+              <div className="num-display text-[28px] md:text-[40px] leading-none mt-2">
                 {miles} <span className="text-[13px] text-[var(--ink-3)] font-normal">mi</span>
               </div>
             </div>
             <div>
               <div className="label">Cycle on-duty</div>
-              <div className="num-display text-[40px] leading-none mt-2">
+              <div className="num-display text-[28px] md:text-[40px] leading-none mt-2">
                 {onClock} <span className="text-[13px] text-[var(--ink-3)] font-normal">hrs</span>
               </div>
             </div>
             <div>
               <div className="label">Days</div>
-              <div className="num-display text-[40px] leading-none mt-2">
+              <div className="num-display text-[28px] md:text-[40px] leading-none mt-2">
                 {days} <span className="text-[13px] text-[var(--ink-3)] font-normal">days</span>
               </div>
             </div>
@@ -70,14 +70,14 @@ export default function TripSummary({ trip }) {
             {trip.is_legal ? (
               <div>
                 <div className="label">Cycle remaining at end</div>
-                <div className="num-display text-[40px] leading-none mt-2">
+                <div className="num-display text-[28px] md:text-[40px] leading-none mt-2">
                   {remaining} <span className="text-[13px] text-[var(--ink-3)] font-normal">/ 70.0</span>
                 </div>
               </div>
             ) : (
               <div>
                 <div className="label" style={{ color: 'var(--vermillion)' }}>Hours short</div>
-                <div className="num-display text-[40px] leading-none mt-2" style={{ color: 'var(--vermillion)' }}>
+                <div className="num-display text-[28px] md:text-[40px] leading-none mt-2" style={{ color: 'var(--vermillion)' }}>
                   {hoursShort} <span className="text-[13px] font-normal" style={{ color: 'var(--vermillion)' }}>hrs</span>
                 </div>
               </div>

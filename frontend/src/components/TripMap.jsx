@@ -61,10 +61,10 @@ export default function TripMap({ trip }) {
   return (
     <section className="card overflow-hidden">
       {/* header */}
-      <div className="px-7 pt-6 pb-4 flex items-center justify-between">
+      <div className="px-5 md:px-7 pt-5 md:pt-6 pb-4 flex items-center justify-between">
         <div>
           <div className="small-caps mb-1">No. 03 · The Route</div>
-          <h2 className="editorial-title text-[26px] leading-tight">
+          <h2 className="editorial-title text-[22px] md:text-[26px] leading-tight">
             {pickup} to {dropoff}.
           </h2>
           <p className="font-serif italic text-[14px] text-[var(--ink-2)] mt-1">
@@ -128,7 +128,7 @@ export default function TripMap({ trip }) {
       </div>
 
       {/* stop list */}
-      <div className="px-7 py-5 border-t border-[var(--line-2)]">
+      <div className="px-5 md:px-7 py-5 border-t border-[var(--line-2)]">
         <div className="label mb-3">Stop sequence</div>
         <ol className="space-y-2.5">
           {(trip.stops ?? []).map((stop, i) => {
@@ -138,11 +138,11 @@ export default function TripMap({ trip }) {
             const mile  = stop.mile_marker ? Math.round(parseFloat(stop.mile_marker)) : '—'
 
             return (
-              <li key={i} className="flex items-center gap-3 text-[13px]">
-                <span className="map-icon-badge" style={{ '--ring': ring }}>
+              <li key={i} className="flex items-center gap-2 md:gap-3 text-[13px] flex-wrap">
+                <span className="map-icon-badge shrink-0" style={{ '--ring': ring }}>
                   <img src={icon} alt="" />
                 </span>
-                <span className="font-mono text-[var(--ink-3)] w-20 shrink-0">
+                <span className="font-mono text-[var(--ink-3)] w-16 md:w-20 shrink-0">
                   mile {mile}
                 </span>
                 <span className="font-medium">{city}{state}</span>

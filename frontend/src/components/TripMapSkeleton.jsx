@@ -11,7 +11,7 @@ export default function TripMapSkeleton() {
   return (
     <section className="card overflow-hidden" aria-busy="true" aria-live="polite">
       {/* header */}
-      <div className="px-7 pt-6 pb-4">
+      <div className="px-5 md:px-7 pt-5 md:pt-6 pb-4">
         <div className="space-y-2">
           <span className="shimmer-bar" style={{ width: 110, height: 10 }} />
           <div><span className="shimmer-bar" style={{ width: 260, height: 24 }} /></div>
@@ -49,7 +49,7 @@ export default function TripMapSkeleton() {
       </div>
 
       {/* stop list — 4 placeholder rows matching the real stop list shape */}
-      <div className="px-7 py-5 border-t" style={{ borderColor: 'var(--line-2)' }}>
+      <div className="px-5 md:px-7 py-5 border-t" style={{ borderColor: 'var(--line-2)' }}>
         <span className="shimmer-bar" style={{ width: 100, height: 10 }} />
         <ol className="space-y-2.5 mt-3">
           {[0, 1, 2, 3].map((i) => (

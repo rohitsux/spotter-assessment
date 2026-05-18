@@ -10,7 +10,7 @@ export default function Header() {
       className="border-b bg-[var(--surface)]"
       style={{ borderColor: 'var(--line)' }}
     >
-      <div className="max-w-[1180px] mx-auto px-8 py-4 flex items-center justify-between">
+      <div className="max-w-[1180px] mx-auto px-4 md:px-8 py-4 flex items-center justify-between gap-3">
         <div className="flex items-center gap-3">
           <div
             className="w-9 h-9 flex items-center justify-center"
@@ -33,7 +33,7 @@ export default function Header() {
             <div className="small-caps mt-1">Hours of Service · 70 hr / 8 day</div>
           </div>
         </div>
-        <div className="small-caps">Vol. 1 · No. 1 · Single Driver</div>
+        <div className="small-caps hidden md:block">Vol. 1 · No. 1 · Single Driver</div>
       </div>
     </header>
   )

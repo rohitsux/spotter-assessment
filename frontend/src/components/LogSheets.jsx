@@ -44,12 +44,12 @@ function LogDayCard({ day, dayIndex, openByDefault }) {
   return (
     <details className="card" open={openByDefault}>
       <summary
-        className="px-6 py-4 flex items-center justify-between"
+        className="px-5 md:px-6 py-4 flex items-center justify-between gap-3"
         style={{ cursor: 'pointer', listStyle: 'none' }}
       >
-        <div className="flex items-center gap-4 flex-wrap">
+        <div className="flex items-center gap-3 md:gap-4 flex-wrap">
           <div className="small-caps">Day {ordinal(dayIndex)}</div>
-          <div className="font-serif text-[20px] leading-tight">{dateLabel}</div>
+          <div className="font-serif text-[17px] md:text-[20px] leading-tight">{dateLabel}</div>
           <div className="small-caps">{milesLabel} · {onClockLabel}</div>
         </div>
         <svg className="chev" width="16" height="16" viewBox="0 0 16 16" fill="none">
@@ -60,7 +60,7 @@ function LogDayCard({ day, dayIndex, openByDefault }) {
 
       <div className="border-t" style={{ borderColor: 'var(--line-2)' }}>
         {/* Admin block */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-x-8 gap-y-4 px-6 py-5 border-b"
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-x-6 md:gap-x-8 gap-y-4 px-5 md:px-6 py-5 border-b"
              style={{ borderColor: 'var(--line-2)' }}>
           <AdminField label="Driver"        value={day.driver_name} />
           <AdminField label="Tractor"       value={day.tractor_number} />
@@ -73,7 +73,7 @@ function LogDayCard({ day, dayIndex, openByDefault }) {
         </div>
 
         {/* 24-hr grid */}
-        <div className="px-6 py-6 overflow-x-auto">
+        <div className="px-5 md:px-6 py-6 overflow-x-auto">
           <LogSheetGrid
             entries={day.entries || []}
             totals={{
@@ -86,7 +86,7 @@ function LogDayCard({ day, dayIndex, openByDefault }) {
         </div>
 
         {/* Totals row */}
-        <div className="px-6 py-5 border-t grid grid-cols-2 md:grid-cols-6 gap-6"
+        <div className="px-5 md:px-6 py-5 border-t grid grid-cols-2 md:grid-cols-6 gap-4 md:gap-6"
              style={{ borderColor: 'var(--line-2)' }}>
           <TotalCell label="Off-Duty"     value={day.total_off_duty_hrs} />
           <TotalCell label="Sleeper Berth" value={day.total_sleeper_hrs} />

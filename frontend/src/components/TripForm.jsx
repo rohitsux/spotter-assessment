@@ -74,7 +74,7 @@ export default function TripForm({ onTrip, onLoadingChange }) {
   }
 
   return (
-    <section className="card p-7 form-section-anchor">
+    <section className="card p-5 md:p-7 form-section-anchor">
       <div className="mascot-float" aria-hidden="true">
         <img src="/mascots/mascot-idle.svg" alt="" />
       </div>
@@ -103,7 +103,7 @@ export default function TripForm({ onTrip, onLoadingChange }) {
 
       <div className="mb-5">
         <div className="small-caps mb-2">No. 01 · The Brief</div>
-        <h2 className="editorial-title text-[36px] leading-[1.05]">Plan a trip.</h2>
+        <h2 className="editorial-title text-[28px] md:text-[36px] leading-[1.05]">Plan a trip.</h2>
       </div>
 
       <form className="space-y-4" onSubmit={handleSubmit}>
@@ -153,7 +153,7 @@ export default function TripForm({ onTrip, onLoadingChange }) {
           </div>
         </div>
 
-        <div className="pt-2 flex items-center justify-between">
+        <div className="pt-2 flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
           <span className="small-caps">Truck profile · driving-hgv · ORS</span>
           <button type="submit" className="btn-primary" disabled={loading}>
             {loading ? 'Planning…' : 'Plan trip'}

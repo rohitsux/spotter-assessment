@@ -8,7 +8,7 @@
  */
 export default function TripSummarySkeleton() {
   return (
-    <section className="card p-7 relative" aria-busy="true" aria-live="polite">
+    <section className="card p-5 md:p-7 relative" aria-busy="true" aria-live="polite">
       <div className="flex items-start justify-between gap-6">
         <div className="flex-1">
           <div className="small-caps mb-2">No. 02 · The Verdict</div>
@@ -20,7 +20,7 @@ export default function TripSummarySkeleton() {
           </div>
 
           {/* 4-stat grid */}
-          <div className="grid grid-cols-4 gap-6 mt-4">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-6 mt-4">
             {[0, 1, 2, 3].map((i) => (
               <div key={i}>
                 <span className="shimmer-bar" style={{ width: '60%', height: 10 }} />
