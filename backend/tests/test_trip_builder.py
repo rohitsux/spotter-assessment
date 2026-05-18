@@ -201,7 +201,11 @@ def mock_ors(monkeypatch):
             return ors_client.GeocodeResult(label="Houston, TX, USA", lng=-95.3698, lat=29.7604)
         if "Chicago" in text:
             return ors_client.GeocodeResult(label="Chicago, IL, USA", lng=-87.6298, lat=41.8781)
-        return ors_client.GeocodeResult(label=text, lng=0.0, lat=0.0)
+        # Default (e.g. "Dallas, TX" from the test inputs): return coords near
+        # the pickup so haversine < 5 km and the deadhead leg is skipped.
+        # The existing assertions in this fixture's tests were written for
+        # the single-leg-routing world; a dedicated deadhead test is below.
+        return ors_client.GeocodeResult(label=text, lng=-95.3698, lat=29.7604)
 
     def fake_route_hgv(src, dst, api_key, **kw):
         return ors_client.RouteResult(miles=1088.0, hours=24.0, geojson=fixture)
@@ -274,6 +278,115 @@ def test_build_trip_writes_three_log_days_each_summing_to_24_hrs(mock_ors):
     # Every day has at least one entry
     for d in log_days:
         assert d.entries.count() >= 1
+
+
+@pytest.fixture
+def mock_ors_with_deadhead(monkeypatch):
+    """Stub ORS for a real two-leg trip: Dallas -> Houston (deadhead) ->
+    Chicago (main). The two ORS route calls return different miles/hours
+    so we can assert leg-A miles end up in total_miles."""
+    fixture = json.loads(FIXTURE_PATH.read_text()) if FIXTURE_PATH.exists() else {
+        "features": [{
+            "geometry": {"type": "LineString", "coordinates": [[-95.37, 29.76], [-87.65, 41.85]]},
+            "properties": {"summary": {"distance": 1751033.0, "duration": 86400.0}},
+        }]
+    }
+    leg_a_fixture = {
+        "features": [{
+            "geometry": {"type": "LineString",
+                         "coordinates": [[-96.797, 32.7767], [-95.3698, 29.7604]]},
+            "properties": {"summary": {"distance": 240 * 1609.34, "duration": 4 * 3600.0}},
+        }]
+    }
+    from trips import ors_client
+
+    def fake_geocode(text, api_key, **kw):
+        if "Dallas" in text:
+            return ors_client.GeocodeResult(label="Dallas, TX, USA", lng=-96.797, lat=32.7767)
+        if "Houston" in text:
+            return ors_client.GeocodeResult(label="Houston, TX, USA", lng=-95.3698, lat=29.7604)
+        if "Chicago" in text:
+            return ors_client.GeocodeResult(label="Chicago, IL, USA", lng=-87.6298, lat=41.8781)
+        return ors_client.GeocodeResult(label=text, lng=0.0, lat=0.0)
+
+    def fake_route_hgv(src, dst, api_key, **kw):
+        # src is a GeocodeResult; route_a is the call where dst is the Houston pickup
+        # (i.e. the deadhead leg). Distinguish by dst.lat ~= 29.76 (Houston).
+        dst_lat = dst.lat if hasattr(dst, "lat") else float(dst[1])
+        if abs(dst_lat - 29.7604) < 0.01:
+            return ors_client.RouteResult(miles=240.0, hours=4.0, geojson=leg_a_fixture)
+        return ors_client.RouteResult(miles=1088.0, hours=24.0, geojson=fixture)
+
+    monkeypatch.setattr(trip_builder, "geocode", fake_geocode)
+    monkeypatch.setattr(trip_builder, "route_hgv", fake_route_hgv)
+
+
+@pytest.mark.django_db
+def test_build_trip_with_real_deadhead_sums_total_miles(mock_ors_with_deadhead):
+    """Dallas->Houston->Chicago: total_miles = 240 + 1088 = 1328."""
+    trip = build_trip(
+        current_location="Dallas, TX",
+        pickup_location="Houston, TX",
+        dropoff_location="Chicago, IL",
+        current_cycle_used_hrs=20.0,
+        start_at=T0,
+        api_key="fake",
+    )
+    assert trip.is_legal is True
+    assert float(trip.total_miles) == pytest.approx(1328.0, abs=0.5)
+    assert float(trip.total_drive_hours) == pytest.approx(28.0, abs=0.1)
+    # cycle = 20 + 4 (deadhead drive) + 1 (pickup) + 24 (drive) + 0.25 (fuel) + 1 (dropoff) = 50.25
+    assert float(trip.cycle_used_at_end) == pytest.approx(50.25, abs=0.5)
+
+
+@pytest.mark.django_db
+def test_build_trip_with_real_deadhead_writes_deadhead_stop(mock_ors_with_deadhead):
+    """The first Stop must be a DEADHEAD marker at the current_location coords."""
+    trip = build_trip(
+        current_location="Dallas, TX",
+        pickup_location="Houston, TX",
+        dropoff_location="Chicago, IL",
+        current_cycle_used_hrs=20.0,
+        start_at=T0,
+        api_key="fake",
+    )
+    stops = list(trip.stops.all().order_by("arrive_at"))
+    assert stops[0].type == "DEADHEAD"
+    assert stops[0].city == "Dallas"
+    assert stops[0].state == "TX"
+    assert float(stops[0].lat) == pytest.approx(32.7767, abs=0.001)
+    assert float(stops[0].lng) == pytest.approx(-96.797, abs=0.001)
+    assert float(stops[0].mile_marker) == pytest.approx(0.0)
+    # And the PICKUP is the SECOND stop (not the first)
+    assert stops[1].type == "PICKUP"
+
+
+@pytest.mark.django_db
+def test_build_trip_concatenates_polylines_into_one_feature(mock_ors_with_deadhead):
+    """route_geometry should be a single FeatureCollection with one
+    LineString joining Dallas through Houston to Chicago."""
+    trip = build_trip(
+        current_location="Dallas, TX",
+        pickup_location="Houston, TX",
+        dropoff_location="Chicago, IL",
+        current_cycle_used_hrs=20.0,
+        start_at=T0,
+        api_key="fake",
+    )
+    geom = trip.route_geometry
+    assert geom["type"] == "FeatureCollection"
+    assert len(geom["features"]) == 1
+    coords = geom["features"][0]["geometry"]["coordinates"]
+    # First coord = Dallas, last coord = Chicago (mock leg B's last point)
+    assert coords[0][0] == pytest.approx(-96.797, abs=0.01)    # lng
+    assert coords[0][1] == pytest.approx(32.7767, abs=0.01)    # lat
+    assert coords[-1][0] == pytest.approx(-87.65, abs=0.5)     # Chicago-ish lng
+    # And the joint point at Houston should appear exactly once (no duplicate)
+    houston_count = sum(
+        1 for c in coords
+        if abs(c[0] - (-95.3698)) < 0.001 and abs(c[1] - 29.7604) < 0.001
+    )
+    assert houston_count == 1
 
 
 @pytest.mark.django_db

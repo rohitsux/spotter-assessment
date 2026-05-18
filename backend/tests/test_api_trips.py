@@ -35,7 +35,11 @@ def mock_ors_success(monkeypatch):
             return ors_client.GeocodeResult(label="Houston, TX, USA", lng=-95.3698, lat=29.7604)
         if "Chicago" in text:
             return ors_client.GeocodeResult(label="Chicago, IL, USA", lng=-87.6298, lat=41.8781)
-        return ors_client.GeocodeResult(label=text, lng=0.0, lat=0.0)
+        # Default (e.g. "Dallas, TX") returns Houston-area coords so the
+        # deadhead leg is skipped — keeps these envelope-shape tests focused
+        # on the single-leg-routing case. Deadhead-specific API tests live
+        # in test_api_trips_deadhead.py.
+        return ors_client.GeocodeResult(label=text, lng=-95.3698, lat=29.7604)
 
     def fake_route_hgv(src, dst, api_key, **kw):
         return ors_client.RouteResult(miles=1088.0, hours=24.0, geojson=fixture)

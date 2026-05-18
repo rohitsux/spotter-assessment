@@ -22,14 +22,15 @@ export default function TripSummary({ trip }) {
         <div className="flex-1">
           <div className="small-caps mb-2">No. 02 · The Verdict</div>
 
-          {/* Pill + route */}
-          <div className="flex items-center gap-3 mb-3">
+          {/* Pill + route. When current != pickup, show all three legs
+              so the dispatcher sees the deadhead in the route header. */}
+          <div className="flex items-center gap-3 mb-3 flex-wrap">
             {trip.is_legal ? (
               <span className="pill pill-ok">Trip is legal</span>
             ) : (
               <span className="pill pill-bad">Trip not legal in current cycle</span>
             )}
-            <span className="small-caps">{trip.pickup_location} → {trip.dropoff_location}</span>
+            <span className="small-caps">{routeLine(trip)}</span>
           </div>
 
           {/* Not-legal reason banner */}
@@ -103,6 +104,21 @@ export default function TripSummary({ trip }) {
 // ---------------------------------------------------------------------------
 // Formatting helpers
 // ---------------------------------------------------------------------------
+
+function routeLine(trip) {
+  const cur = (trip.current_location || '').trim();
+  const pu  = (trip.pickup_location  || '').trim();
+  const drop = (trip.dropoff_location || '').trim();
+  // If the user typed current == pickup, or the backend skipped the deadhead
+  // (haversine < threshold), no DEADHEAD stop appears — fall back to the
+  // simple 2-leg line. Detect via the persisted stops array.
+  const hasDeadhead = Array.isArray(trip.stops)
+    && trip.stops.some((s) => s.type === 'DEADHEAD');
+  if (hasDeadhead && cur) {
+    return `${cur} → ${pu} → ${drop}`;
+  }
+  return `${pu} → ${drop}`;
+}
 
 function fmtMiles(totalMiles) {
   return parseFloat(totalMiles).toLocaleString('en-US', { maximumFractionDigits: 0 });

@@ -26,12 +26,13 @@ from __future__ import annotations
 from dataclasses import dataclass
 from datetime import date, datetime, timedelta
 from decimal import Decimal
-from math import sqrt
+from math import asin, cos, radians, sin, sqrt
 from typing import Iterable
 
 from django.db import transaction
 
 from ..hos_constants import (
+    DEADHEAD_NEAR_ZERO_KM,
     DUTY_DRIVING,
     DUTY_OFF_DUTY,
     DUTY_ON_DUTY,
@@ -85,6 +86,9 @@ class LogEntryRow:
 
 
 # Maps schedule EventType → (Stop.type code, remark text)
+# DEADHEAD intentionally absent — the trip_builder inserts ONE DEADHEAD stop
+# at the geocoded current_location (not one per drive segment), so it's
+# handled in build_trip(), not in the event projection.
 STOP_TYPE_FOR_EVENT = {
     EventType.PICKUP:   "PICKUP",
     EventType.DROPOFF:  "DROPOFF",
@@ -100,6 +104,18 @@ REMARK_FOR_EVENT = {
     EventType.REST_10:  "10-hour rest",
     EventType.BREAK_30: "30-minute break",
 }
+
+
+def _haversine_km(a: tuple[float, float], b: tuple[float, float]) -> float:
+    """Great-circle distance in km. Inputs are (lat, lng) tuples in degrees.
+    Used to detect zero/near-zero deadhead (current_location ~= pickup) so
+    we can skip Leg A entirely per plan §9 resolved Q4."""
+    lat1, lng1 = radians(a[0]), radians(a[1])
+    lat2, lng2 = radians(b[0]), radians(b[1])
+    dlat = lat2 - lat1
+    dlng = lng2 - lng1
+    h = sin(dlat / 2) ** 2 + cos(lat1) * cos(lat2) * sin(dlng / 2) ** 2
+    return 2 * 6371.0 * asin(sqrt(h))
 
 
 # --- polyline interpolation -------------------------------------------------
@@ -163,17 +179,20 @@ def project_events_to_stops(
     pickup_label: str,
     dropoff_label: str,
 ) -> list[StopRow]:
-    """Emit one StopRow per non-DRIVE event. lat/lng interpolated along the
+    """Emit one StopRow per non-driving event. lat/lng interpolated along the
     polyline by mile_marker. city/state are best-effort — we don't reverse-
     geocode every intermediate stop (Decision 8 tradeoff: a real product
-    would consume a truck-stop API)."""
+    would consume a truck-stop API).
+
+    DRIVE and DEADHEAD events emit no Stops here. The DEADHEAD_START marker
+    Stop at current_location is inserted separately by build_trip()."""
     cumulative = _polyline_cumulative_miles(polyline)
     pickup_city, pickup_state = _split_city_state(pickup_label)
     dropoff_city, dropoff_state = _split_city_state(dropoff_label)
 
     rows: list[StopRow] = []
     for ev in events:
-        if ev.type == EventType.DRIVE:
+        if ev.type in (EventType.DRIVE, EventType.DEADHEAD):
             continue
 
         if ev.type == EventType.PICKUP:
@@ -205,12 +224,18 @@ def project_events_to_log_entries(
     events: Iterable[ScheduleEvent],
     pickup_label: str,
     dropoff_label: str,
+    current_label: str = "",
 ) -> list[LogEntryRow]:
     """Emit LogEntryRow(s) per event. REST_10 splits into 1 hr OFF + 9 hr
     SLEEPER per Decision 8. Any segment crossing midnight is split into
-    two rows on adjacent dates so daily totals sum to exactly 24 hrs."""
+    two rows on adjacent dates so daily totals sum to exactly 24 hrs.
+
+    DEADHEAD events project to DUTY_DRIVING with remark 'Deadhead drive'
+    and city/state from current_location (informational — driver is en
+    route to pickup)."""
     pickup_city, pickup_state = _split_city_state(pickup_label)
     dropoff_city, dropoff_state = _split_city_state(dropoff_label)
+    current_city, current_state = _split_city_state(current_label) if current_label else ("En route", "")
 
     rows: list[LogEntryRow] = []
     for ev in events:
@@ -218,6 +243,8 @@ def project_events_to_log_entries(
             city, state = pickup_city, pickup_state
         elif ev.type == EventType.DROPOFF:
             city, state = dropoff_city, dropoff_state
+        elif ev.type == EventType.DEADHEAD:
+            city, state = current_city, current_state
         else:
             city, state = "En route", ""
 
@@ -235,15 +262,20 @@ def project_events_to_log_entries(
 
         duty = _duty_status_for(ev.type)
         end = ev.start_at + timedelta(hours=ev.duration_hrs)
-        remark = REMARK_FOR_EVENT.get(ev.type, "")
-        # DRIVE entries aren't stationary; everything else is.
-        is_stationary = ev.type != EventType.DRIVE
+        if ev.type == EventType.DEADHEAD:
+            remark = "Deadhead drive"
+            is_stationary = False
+        else:
+            remark = REMARK_FOR_EVENT.get(ev.type, "")
+            # DRIVE entries aren't stationary; everything else is.
+            is_stationary = ev.type != EventType.DRIVE
         rows.extend(_split_segment(ev.start_at, end, duty, city, state, remark, is_stationary))
     return rows
 
 
 def _duty_status_for(event_type: EventType) -> int:
     return {
+        EventType.DEADHEAD: DUTY_DRIVING,
         EventType.PICKUP:   DUTY_ON_DUTY,
         EventType.DRIVE:    DUTY_DRIVING,
         EventType.BREAK_30: DUTY_OFF_DUTY,
@@ -408,13 +440,13 @@ def _dec(x: float, places: int = 2) -> Decimal:
 
 
 def miles_per_day(events: list[ScheduleEvent]) -> dict[date, float]:
-    """Sum the miles_covered of DRIVE events per calendar date.
+    """Sum the miles_covered of DRIVE and DEADHEAD events per calendar date.
     Drive events are not split at midnight in the scheduler (they're a
     single contiguous segment) — for daily-mileage totals we apportion
     by elapsed time on each side of midnight."""
     out: dict[date, float] = {}
     for ev in events:
-        if ev.type != EventType.DRIVE:
+        if ev.type not in (EventType.DRIVE, EventType.DEADHEAD):
             continue
         start = ev.start_at
         end = start + timedelta(hours=ev.duration_hrs)
@@ -444,34 +476,113 @@ def build_trip(
     api_key: str,
 ) -> Trip:
     """Full pipeline. Raises ORSError on routing failure (DRF maps to 502).
-    All DB writes happen in one transaction."""
+    All DB writes happen in one transaction.
 
-    # 1. Geocode + route via ORS (Decision 1)
+    Two-leg routing per plan §9 amendment:
+      Leg A (deadhead): current_location → pickup. Skipped if current ~= pickup
+                        (within DEADHEAD_NEAR_ZERO_KM haversine).
+      Leg B (main):     pickup → dropoff.
+    The scheduler runs both legs on the same HOSClocks instance — Leg A
+    miles and hours count against the same shift and the 70-hr cycle."""
+
+    # 1. Geocode all three points
+    current_geo = geocode(current_location, api_key=api_key)
     pickup_geo = geocode(pickup_location, api_key=api_key)
     dropoff_geo = geocode(dropoff_location, api_key=api_key)
-    route = route_hgv(pickup_geo, dropoff_geo, api_key=api_key)
 
-    # 2. Run the HOS scheduler (Decision 8)
+    # 2. Decide whether Leg A is needed (haversine threshold per Decision 9)
+    deadhead_km = _haversine_km(
+        (current_geo.lat, current_geo.lng),
+        (pickup_geo.lat, pickup_geo.lng),
+    )
+    has_deadhead = deadhead_km >= DEADHEAD_NEAR_ZERO_KM
+
+    # 3. ORS routing — Leg B always; Leg A only if needed
+    route_b = route_hgv(pickup_geo, dropoff_geo, api_key=api_key)
+    if has_deadhead:
+        route_a = route_hgv(current_geo, pickup_geo, api_key=api_key)
+        total_miles = route_a.miles + route_b.miles
+        total_drive_hours = route_a.hours + route_b.hours
+        deadhead_miles = route_a.miles
+        deadhead_drive_hours = route_a.hours
+    else:
+        route_a = None
+        total_miles = route_b.miles
+        total_drive_hours = route_b.hours
+        deadhead_miles = 0.0
+        deadhead_drive_hours = 0.0
+
+    # 4. Run the HOS scheduler (Decision 8 + plan §9 deadhead amendment)
     result = schedule(
         start_at=start_at,
-        route_miles=route.miles,
-        total_drive_hours=route.hours,
+        route_miles=route_b.miles,
+        total_drive_hours=route_b.hours,
         cycle_used_hrs=float(current_cycle_used_hrs),
+        deadhead_miles=deadhead_miles,
+        deadhead_drive_hours=deadhead_drive_hours,
     )
 
-    # 3. Project events (legal-path projection skips entries on the not-legal
-    #    path per resolved-question 3: summary + map only, no log sheets).
-    polyline = route.coordinates
+    # 5. Build the concatenated polyline used for marker interpolation AND
+    #    for the persisted GeoJSON (frontend draws one continuous line).
+    if has_deadhead:
+        # Concatenate Leg A coords + Leg B coords. Skip Leg B's first point
+        # because it's the same coord as Leg A's last (the pickup).
+        polyline = list(route_a.coordinates) + list(route_b.coordinates[1:])
+        # Build a single FeatureCollection so the persisted shape matches
+        # the no-deadhead case (frontend doesn't need to know two-leg vs one).
+        merged_geojson = {
+            "type": "FeatureCollection",
+            "features": [
+                {
+                    "type": "Feature",
+                    "properties": {
+                        "summary": {
+                            "distance": (route_a.miles + route_b.miles) * 1609.34,
+                            "duration": (route_a.hours + route_b.hours) * 3600.0,
+                        }
+                    },
+                    "geometry": {"type": "LineString", "coordinates": polyline},
+                }
+            ],
+        }
+    else:
+        polyline = list(route_b.coordinates)
+        merged_geojson = route_b.geojson
+
+    # 6. Project events (legal-path projection skips entries on the not-legal
+    #    path per resolved Q3: summary + map only, no log sheets).
     stops = project_events_to_stops(result.events, polyline, pickup_geo.label, dropoff_geo.label)
+
+    # Prepend the DEADHEAD_START marker stop at the current_location.
+    if has_deadhead:
+        current_city, current_state = _split_city_state(current_geo.label)
+        deadhead_stop = StopRow(
+            type=Stop.StopType.DEADHEAD,
+            city=current_city,
+            state=current_state,
+            lat=current_geo.lat,
+            lng=current_geo.lng,
+            mile_marker=0.0,
+            arrive_at=start_at,
+            depart_at=start_at,
+            duration_minutes=0,
+            remark="Depart current location",
+        )
+        stops = [deadhead_stop] + stops
 
     log_days_data: list[dict] = []
     if result.is_legal:
-        entries = project_events_to_log_entries(result.events, pickup_geo.label, dropoff_geo.label)
+        entries = project_events_to_log_entries(
+            result.events,
+            pickup_geo.label,
+            dropoff_geo.label,
+            current_label=current_geo.label if has_deadhead else "",
+        )
         log_days_data = aggregate_log_days(entries, miles_per_day(result.events))
 
     end_at = result.events[-1].start_at + timedelta(hours=result.events[-1].duration_hrs)
 
-    # 4. Write everything atomically (Decision 5 — SQLite, one tx)
+    # 7. Write everything atomically (Decision 5 — SQLite, one tx)
     with transaction.atomic():
         trip = Trip.objects.create(
             current_location=current_location,
@@ -480,12 +591,12 @@ def build_trip(
             current_cycle_used_hrs=_dec(current_cycle_used_hrs),
             start_at=start_at,
             end_at=end_at,
-            total_miles=_dec(route.miles),
-            total_drive_hours=_dec(route.hours),
+            total_miles=_dec(total_miles),
+            total_drive_hours=_dec(total_drive_hours),
             is_legal=result.is_legal,
             cycle_used_at_end=_dec(result.cycle_used_at_end),
             not_legal_reason=result.not_legal_reason or "",
-            route_geometry=route.geojson,
+            route_geometry=merged_geojson,
         )
         Stop.objects.bulk_create([
             Stop(

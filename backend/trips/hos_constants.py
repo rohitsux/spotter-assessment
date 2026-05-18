@@ -65,6 +65,12 @@ FUEL_DURATION_HOURS: float = FUEL_DURATION_MINUTES / 60.0  # 0.25
 PICKUP_DURATION_HOURS: float = 1.0
 DROPOFF_DURATION_HOURS: float = 1.0
 
+# Deadhead (current_location → pickup) is skipped if current and pickup are
+# within this haversine distance. Avoids burning an ORS quota call and
+# planting a confusing "depart" marker right on top of the pickup marker
+# when the truck is already at the pickup yard. Per plan §9 resolved Q4.
+DEADHEAD_NEAR_ZERO_KM: float = 5.0
+
 
 # --- FMCSA duty-status row codes -------------------------------------------
 # These mirror trips.models.LogEntry.DutyStatus and the FMCSA paper-log rows.

@@ -52,6 +52,7 @@ class Stop(models.Model):
     """A geographic event on the trip. Feeds the map markers."""
 
     class StopType(models.TextChoices):
+        DEADHEAD = "DEADHEAD", "Deadhead depart"
         PICKUP = "PICKUP", "Pickup"
         DROPOFF = "DROPOFF", "Dropoff"
         FUEL = "FUEL", "Fuel"
