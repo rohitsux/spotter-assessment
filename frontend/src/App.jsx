@@ -4,6 +4,7 @@ import TripForm from './components/TripForm.jsx'
 import TripSummary from './components/TripSummary.jsx'
 import TripSummarySkeleton from './components/TripSummarySkeleton.jsx'
 import TripMap from './components/TripMap.jsx'
+import TripMapSkeleton from './components/TripMapSkeleton.jsx'
 
 /**
  * Editorial layout per MOCKUP.html (locked v5 spec):
@@ -20,7 +21,12 @@ export default function App() {
       <Header />
       <main className="max-w-[1180px] mx-auto px-8 py-8 space-y-6">
         <TripForm onTrip={setTrip} onLoadingChange={setLoading} />
-        {loading && <TripSummarySkeleton />}
+        {loading && (
+          <>
+            <TripSummarySkeleton />
+            <TripMapSkeleton />
+          </>
+        )}
         {!loading && trip && (
           <>
             <TripSummary trip={trip} />
