@@ -61,6 +61,14 @@ export default function TripMap({ trip }) {
 
   const pickup  = trip.pickup_location  ?? ''
   const dropoff = trip.dropoff_location ?? ''
+  // When the trip has a real deadhead leg, the map polyline starts at
+  // current_location, not pickup — title should reflect that.
+  const hasDeadhead = Array.isArray(trip.stops)
+    && trip.stops.some((s) => s.type === 'DEADHEAD')
+  const current = (trip.current_location ?? '').trim()
+  const titleRoute = hasDeadhead && current
+    ? `${current} → ${pickup} → ${dropoff}`
+    : `${pickup} to ${dropoff}`
 
   return (
     <section className="card overflow-hidden">
@@ -69,7 +77,7 @@ export default function TripMap({ trip }) {
         <div>
           <div className="small-caps mb-1">No. 03 · The Route</div>
           <h2 className="editorial-title text-[22px] md:text-[26px] leading-tight">
-            {pickup} to {dropoff}.
+            {titleRoute}.
           </h2>
           <p className="font-serif italic text-[14px] text-[var(--ink-2)] mt-1">
             Routed on the truck profile. Bridge clearances and weight limits respected.

@@ -45,17 +45,15 @@ export default function TripForm({ onTrip, onLoadingChange }) {
       if (status === 400 && data && typeof data === 'object') {
         setFieldErrors(data)
       } else if (status === 502 && data?.detail) {
-        setTopError({
-          detail: data.detail,
-          upstream_message: data.upstream_message ?? '',
-        })
+        // Backend now sends a human-readable detail; ignore any legacy
+        // upstream_message field (kept off-screen even if present).
+        setTopError({ detail: data.detail })
       } else if (!err.response) {
         setTopError({
           detail: 'Could not reach the planner. Is the backend running?',
-          upstream_message: '',
         })
       } else {
-        setTopError({ detail: 'An unexpected error occurred.', upstream_message: '' })
+        setTopError({ detail: 'An unexpected error occurred. Try again in a moment.' })
       }
     } finally {
       setLoading(false)
@@ -87,17 +85,9 @@ export default function TripForm({ onTrip, onLoadingChange }) {
             background: 'var(--vermillion-soft)',
           }}
         >
-          <p className="small-caps" style={{ color: 'var(--vermillion)' }}>
+          <p className="font-serif text-[15px]" style={{ color: 'var(--ink)' }}>
             {topError.detail}
           </p>
-          {topError.upstream_message && (
-            <p
-              className="font-mono mt-1"
-              style={{ fontSize: '12px', color: 'var(--vermillion)' }}
-            >
-              {topError.upstream_message}
-            </p>
-          )}
         </div>
       )}
 

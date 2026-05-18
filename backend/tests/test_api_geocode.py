@@ -160,8 +160,9 @@ def test_geocode_upstream_failure_returns_502(client, monkeypatch):
     resp = client.get("/api/geocode/", {"text": "Houston"})
     assert resp.status_code == 502
     body = resp.json()
-    assert body["detail"] == "Routing service unavailable"
-    assert body["upstream_status"] == 503
+    assert "temporarily unavailable" in body["detail"].lower()
+    assert "upstream_status" not in body
+    assert "upstream_message" not in body
 
 
 # --- autocomplete client (separate from view) ----------------------------

@@ -186,9 +186,12 @@ def test_post_trips_ors_failure_returns_502(client, mock_ors_failure):
     )
     assert resp.status_code == 502
     body = resp.json()
-    assert body["detail"] == "Routing service unavailable"
-    assert body["upstream_status"] == 503
-    assert "upstream_message" in body
+    # The mock raises ORSError(status=503), so the response body should be the
+    # 5xx human message — NOT the raw upstream HTTP code or library message.
+    assert "temporarily unavailable" in body["detail"].lower()
+    # Technical upstream fields are server-log only now; clients see a clean shape.
+    assert "upstream_status" not in body
+    assert "upstream_message" not in body
 
 
 # --- GET nonexistent -------------------------------------------------------
