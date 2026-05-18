@@ -1,7 +1,9 @@
 django-cors-headers==4.9.0
 Django==5.1.15
 djangorestframework==3.17.1
+gunicorn==26.0.0
 pytest-django==4.12.0
 pytest==9.0.3
 python-dotenv==1.2.2
 requests==2.34.2
+whitenoise==6.12.0
