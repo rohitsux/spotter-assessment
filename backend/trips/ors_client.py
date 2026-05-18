@@ -92,6 +92,41 @@ def geocode(text: str, api_key: str, *, timeout: float = DEFAULT_TIMEOUT_SECONDS
     return GeocodeResult(label=label, lng=float(coords[0]), lat=float(coords[1]))
 
 
+def autocomplete(
+    text: str,
+    api_key: str,
+    *,
+    size: int = 5,
+    timeout: float = DEFAULT_TIMEOUT_SECONDS,
+) -> list[GeocodeResult]:
+    """Free-text → up to `size` suggested matches via /geocode/autocomplete.
+    Empty results return an empty list, NOT an error (unlike geocode())."""
+    if not api_key:
+        raise ORSError("ORS_API_KEY is not configured")
+
+    url = f"{ORS_BASE}/geocode/autocomplete"
+    params = {"api_key": api_key, "text": text, "size": size}
+    try:
+        resp = requests.get(url, params=params, timeout=timeout, headers={"Accept": "application/json"})
+    except requests.RequestException as exc:
+        raise ORSError(f"network error contacting ORS autocomplete: {exc}") from exc
+
+    if not resp.ok:
+        raise ORSError(
+            f"ORS autocomplete returned HTTP {resp.status_code} for {text!r}",
+            status=resp.status_code,
+            body=resp.text[:500],
+        )
+
+    data = resp.json()
+    out: list[GeocodeResult] = []
+    for feat in data.get("features") or []:
+        coords = feat["geometry"]["coordinates"]
+        label = feat["properties"].get("label", text)
+        out.append(GeocodeResult(label=label, lng=float(coords[0]), lat=float(coords[1])))
+    return out
+
+
 def route_hgv(
     src: GeocodeResult | list[float],
     dst: GeocodeResult | list[float],

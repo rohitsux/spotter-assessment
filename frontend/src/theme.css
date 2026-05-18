@@ -67,6 +67,42 @@ html, body { background: var(--bg); color: var(--ink); font-family: 'Karla', sys
 .btn-primary:disabled { opacity: 0.6; cursor: wait; }
 .btn-primary:disabled:hover { background: var(--ink); }
 
+/* Autocomplete dropdown for location inputs. Sits beneath the editorial
+ * input's underline; same paper-card aesthetic as the form .card. */
+.autocomplete-wrap {
+  position: relative;
+  width: 100%;
+}
+.autocomplete-list {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  margin: 0;
+  padding: 4px 0;
+  list-style: none;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 2px;
+  box-shadow: 0 8px 16px rgba(0, 0, 0, 0.06);
+  z-index: 10;
+  max-height: 240px;
+  overflow-y: auto;
+}
+.autocomplete-item {
+  padding: 8px 14px;
+  font-family: 'Newsreader', Georgia, serif;
+  font-size: 15px;
+  color: var(--ink);
+  cursor: pointer;
+  transition: background-color .12s, color .12s;
+}
+.autocomplete-item.is-highlighted,
+.autocomplete-item:hover {
+  background: var(--vermillion-soft);
+  color: var(--vermillion);
+}
+
 .pill {
   display: inline-flex; align-items: center; gap: 8px;
   padding: 5px 0; font-size: 12px; font-weight: 500;

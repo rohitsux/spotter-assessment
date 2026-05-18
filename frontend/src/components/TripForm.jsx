@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { createTrip } from '../api'
+import AutocompleteInput from './AutocompleteInput.jsx'
 
 /**
  * TripForm — Section 1 of the editorial layout, ported verbatim from MOCKUP.html.
@@ -101,22 +102,13 @@ export default function TripForm({ onTrip }) {
       <div className="mb-5">
         <div className="small-caps mb-2">No. 01 · The Brief</div>
         <h2 className="editorial-title text-[36px] leading-[1.05]">Plan a trip.</h2>
-        <p className="font-serif italic text-[16px] text-[var(--ink-2)] mt-3 max-w-[44ch]">
-          Four inputs. One answer. The dispatcher decides yes or no in a single screen. Everything else is detail.
-        </p>
       </div>
 
       <form className="space-y-4" onSubmit={handleSubmit}>
         <div className="field-row">
           <label className="label" htmlFor="cur">Current location</label>
           <div>
-            <input
-              className="input"
-              id="cur"
-              type="text"
-              value={cur}
-              onChange={(e) => setCur(e.target.value)}
-            />
+            <AutocompleteInput id="cur" value={cur} onChange={setCur} />
             {fieldErr('current_location')}
           </div>
         </div>
@@ -124,13 +116,7 @@ export default function TripForm({ onTrip }) {
         <div className="field-row">
           <label className="label" htmlFor="pu">Pickup</label>
           <div>
-            <input
-              className="input"
-              id="pu"
-              type="text"
-              value={pu}
-              onChange={(e) => setPu(e.target.value)}
-            />
+            <AutocompleteInput id="pu" value={pu} onChange={setPu} />
             {fieldErr('pickup_location')}
           </div>
         </div>
@@ -138,13 +124,7 @@ export default function TripForm({ onTrip }) {
         <div className="field-row">
           <label className="label" htmlFor="do">Dropoff</label>
           <div>
-            <input
-              className="input"
-              id="do"
-              type="text"
-              value={drop}
-              onChange={(e) => setDrop(e.target.value)}
-            />
+            <AutocompleteInput id="do" value={drop} onChange={setDrop} />
             {fieldErr('dropoff_location')}
           </div>
         </div>
